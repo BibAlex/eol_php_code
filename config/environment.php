@@ -6,13 +6,16 @@ ini_set('max_execution_time', '21600'); // 6 hours
 ini_set('display_errors', false);
 
 
+// Data Syncing variables
+if(!isset($GLOBALS['PEER_SITE_ID'])) $GLOBALS['PEER_SITE_ID'] = 1;
+
 /* Default Environment */
 if(!isset($GLOBALS['ENV_NAME'])) $GLOBALS['ENV_NAME'] = 'development';
 // passing in the CLI arguments
 set_and_load_proper_environment($argv);
 
 
-if(!defined('WEB_ROOT')) define('WEB_ROOT', 'http://localhost/eol_php_code/');  // URL prefix of this installation
+if(!defined('WEB_ROOT')) define('WEB_ROOT', 'http://localhost/');  // URL prefix of this installation
 if(!defined('MYSQL_BIN_PATH')) define('MYSQL_BIN_PATH', 'mysql ');              // path to mysql binary. THE SPACE AT THE END IS IMPORTANT
 
 if(!isset($GLOBALS['ENV_DEBUG'])) $GLOBALS['ENV_DEBUG'] = true;

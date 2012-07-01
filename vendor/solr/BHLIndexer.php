@@ -56,6 +56,9 @@ class BHLIndexer
             // print_r($this->objects);
             if(isset($this->objects)) $this->solr->send_attributes($this->objects);
             
+            // log index all action
+             $this->solr->log_solr_changes('index_all', 0, 'bhl');
+            
             // exit;
         }
         

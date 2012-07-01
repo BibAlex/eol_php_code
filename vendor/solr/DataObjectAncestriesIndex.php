@@ -33,7 +33,7 @@ class DataObjectAncestriesIndexer
         if(!defined('SOLR_SERVER') || !SolrAPI::ping(SOLR_SERVER, 'data_objects')) return false;
         $this->solr = new SolrAPI(SOLR_SERVER, 'data_objects');
         
-        //$this->solr->delete_all_documents();
+        $this->solr->delete_all_documents();
         
         $start = 0;
         $max_id = 0;
@@ -50,9 +50,13 @@ class DataObjectAncestriesIndexer
         {
             $this->index_next_block($i, $limit);
         }
+        
+        // log index all action
+        $this->solr->log_solr_changes('index_all', 0, 'data_objects');
+             
         // $this->solr->optimize();
         // $results = $this->solr->get_results('ancestor_id:1');
-        // if($results) $this->solr->swap('data_objects_swap', 'data_objects');
+        // if($results) $this->solr->swap('data_objects_swap', 'data_objects');	
     }
     
     public function index_objects(&$data_object_ids = array(), $optimize = false)
@@ -62,6 +66,12 @@ class DataObjectAncestriesIndexer
         foreach($batches as $batch)
         {
             $this->index_next_block(null, null, $batch);
+        }
+        
+        foreach ($data_objects_id as $data_object_id)
+        {
+        	// log index all action
+        	$this->solr->log_solr_changes('update', $data_object_id, 'data_objects');       
         }
         // $this->solr->commit();
         // if($optimize) $this->solr->optimize();

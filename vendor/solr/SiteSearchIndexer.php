@@ -46,12 +46,17 @@ class SiteSearchIndexer
                 $queries = array();
                 foreach($batch as $id) $queries[] = "resource_type:$class_name AND resource_id:$id";
                 $this->solr->delete_by_queries($queries, false);
+                $this->solr->log_solr_changes('delete_all', -1, $class_name);
                 
                 // add new ones if available
                 if(isset($this->objects))
                 {
                     if($class_name == 'TaxonConcept') $this->send_concept_objects_to_solr();
                     else $this->solr->send_attributes($this->objects);
+                    foreach ($ids as $id)
+                    {
+                    	$this->solr->log_solr_changes('index', $id, $class_name);
+                    }
                 }
             }
         }else
@@ -80,6 +85,9 @@ class SiteSearchIndexer
                     else $this->solr->send_attributes($this->objects);
                 }
             }
+            
+            $this->solr->log_solr_changes('delete_all', -1, $class_name);
+            $this->solr->log_solr_changes('update_all', 0, $class_name);
         }
         
         $this->solr->commit();

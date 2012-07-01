@@ -132,6 +132,7 @@ class SolrAPI
         exec("curl ". $this->action_url ."/update -F stream.url=".LOCAL_WEB_ROOT."applications/solr/delete.xml $extra_bit");
         $this->commit();
         $this->optimize();
+        $this->log_solr_changes('delete_all', -1, $this->core);
     }
     
     public function swap($from_core, $to_core)
@@ -315,6 +316,21 @@ class SolrAPI
         if(!$mysql_date) return null;
         return date('Y-m-d', $mysql_date) . "T". date('h:i:s', $mysql_date) ."Z";
     }
+    
+	public function log_solr_changes($action, $object_id, $object_type)
+	{
+		$solr_log = new SolrLog();
+		$solr_log->action = $action;
+		$solr_log->core = $this->core;
+		$solr_log->object_id = $object_id;
+		$solr_log->object_type = $object_type;
+		$solr_log->peer_site_id = $GLOBALS['PEER_SITE_ID'];
+		
+		$created_date = date('Y/m/d H:i:s');
+		$solr_log->created_at = $created_date;
+		$solr_log->updated_at = $created_date;		
+		$solr_log->save();
+	}
 }
 
 ?>

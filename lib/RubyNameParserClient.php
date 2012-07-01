@@ -44,7 +44,7 @@ class RubyNameParserClient
     {
         self::start_parserver();
         if(@!$params['ip']) $params['ip'] = 'localhost';
-        if(@!$params['port']) $params['port'] = '4334';
+        if(@!$params['port']) $params['port'] = '3000';
         $this->timeout_retry_seconds = 120;
         $this->socket_ip = $this->socket_ip ?: $params['ip'];
         $this->socket_port = $this->socket_port ?: $params['port'];

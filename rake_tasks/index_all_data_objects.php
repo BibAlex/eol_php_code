@@ -12,3 +12,6 @@ if(SolrAPI::ping(SOLR_SERVER, 'data_objects'))
 }
 
 ?>
+
+
+
