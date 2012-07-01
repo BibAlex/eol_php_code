@@ -402,8 +402,6 @@ class test_archive_ingest_data_objects extends SimpletestUnitBase
         self::harvest($this->resource);
         
         $data_object = DataObject::find_by_identifier($m->identifier);
-echo("zzzzzzzzzzzz");
-echo($m->identifier);
         $this->assertEqual(count($data_object->data_objects_hierarchy_entries), 2);
         $this->assertEqual(count($data_object->data_objects_taxon_concepts), 2);
         $this->assertEqual($data_object->data_objects_hierarchy_entries[0]->hierarchy_entry->taxon_concept_id,

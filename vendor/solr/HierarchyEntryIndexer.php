@@ -27,7 +27,7 @@ class HierarchyEntryIndexer
         if($r = Rank::find_or_create_by_translated_label('fam.')) $this->rank_labels[$r->id] = 'family';
         //if($r = Rank::find_or_create_by_translated_label('f.')) $this->rank_labels[$r->id] = 'family';
         if($r = Rank::find_or_create_by_translated_label('genus')) $this->rank_labels[$r->id] = 'genus';
-        if($r = Rank::find_or_create_by_translated_label('gen.')) $this->rank_l0abels[$r->id] = 'genus';
+        if($r = Rank::find_or_create_by_translated_label('gen.')) $this->rank_labels[$r->id] = 'genus';
         if($r = Rank::find_or_create_by_translated_label('species')) $this->rank_labels[$r->id] = 'species';
         if($r = Rank::find_or_create_by_translated_label('sp.')) $this->rank_labels[$r->id] = 'species';
     }
