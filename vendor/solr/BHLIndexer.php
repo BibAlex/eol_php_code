@@ -23,7 +23,7 @@ class BHLIndexer
     public function index($optimize = true)
     {
         $this->solr = new SolrAPI($this->solr_server, 'bhl');
-        $this->solr->delete_all_documents();
+        $this->solr->delete_all_documents(false);
         
         $this->lookup_and_cache_publication_titles();
         
@@ -57,7 +57,7 @@ class BHLIndexer
             if(isset($this->objects)) $this->solr->send_attributes($this->objects);
             
             // log index all action
-             $this->solr->log_solr_changes('index_all', 0, 'bhl');
+            if ($log_transaction) $this->solr->log_solr_changes('index_all', 0, 'bhl');
             
             // exit;
         }

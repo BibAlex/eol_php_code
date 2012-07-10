@@ -24,7 +24,7 @@ class DataObjectAncestriesIndexer
             Visibility::preview()->id => 'preview_');
     }
     
-    public function index()
+    public function index($log_transaction=true)
     {
         //exit;
         //return;
@@ -52,14 +52,14 @@ class DataObjectAncestriesIndexer
         }
         
         // log index all action
-        $this->solr->log_solr_changes('index_all', 0, 'data_objects');
+        if ($log_transaction) $this->solr->log_solr_changes('index_all', 0, 'data_objects');
              
         // $this->solr->optimize();
         // $results = $this->solr->get_results('ancestor_id:1');
         // if($results) $this->solr->swap('data_objects_swap', 'data_objects');	
     }
     
-    public function index_objects(&$data_object_ids = array(), $optimize = false)
+    public function index_objects(&$data_object_ids = array(), $optimize = false, $log_transaction=true)
     {
         $this->solr = new SolrAPI(SOLR_SERVER, 'data_objects');
         $batches = array_chunk($data_object_ids, 10000);
@@ -68,11 +68,14 @@ class DataObjectAncestriesIndexer
             $this->index_next_block(null, null, $batch);
         }
         
-        foreach ($data_objects_id as $data_object_id)
-        {
-        	// log index all action
-        	$this->solr->log_solr_changes('update', $data_object_id, 'data_objects');       
-        }
+        if ($log_transaction) 
+		{
+	        foreach ($data_object_ids as $data_object_id)
+	        {
+	        	// log index all action
+	        	$this->solr->log_solr_changes('update', $data_object_id, 'data_objects');       
+	        }
+		}
         // $this->solr->commit();
         // if($optimize) $this->solr->optimize();
     }

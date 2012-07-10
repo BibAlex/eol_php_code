@@ -124,7 +124,7 @@ class SolrAPI
         exec("curl ". $this->action_url ."/update -F stream.url=".LOCAL_WEB_ROOT."applications/solr/optimize.xml $extra_bit");
     }
     
-    public function delete_all_documents()
+    public function delete_all_documents($log_transaction=true)
     {
         if($GLOBALS['ENV_DEBUG']) echo("Solr delete_all_documents $this->action_url\n");
         if(!$GLOBALS['ENV_DEBUG']) $extra_bit = " > /dev/null 2>/dev/null";
@@ -132,7 +132,8 @@ class SolrAPI
         exec("curl ". $this->action_url ."/update -F stream.url=".LOCAL_WEB_ROOT."applications/solr/delete.xml $extra_bit");
         $this->commit();
         $this->optimize();
-        $this->log_solr_changes('delete_all', -1, $this->core);
+        if ($log_transaction) 
+        	$this->log_solr_changes('delete_all', -1, $this->core);
     }
     
     public function swap($from_core, $to_core)
@@ -193,9 +194,7 @@ class SolrAPI
         exec("curl ". $this->action_url ."/update -F stream.url=".LOCAL_WEB_ROOT."$this->csv_path $extra_bit");
         if($commit) $this->commit();
     }
-    
-    
-    
+           
     public function send_attributes($objects)
     {
         @unlink(DOC_ROOT . $this->csv_path);
@@ -238,9 +237,6 @@ class SolrAPI
         }
         fclose($OUT);
         
-        
-        
-        
         $curl = "curl ". $this->action_url ."/update/csv -F overwrite=true -F separator='". $this->file_delimiter ."'";
         foreach($multi_values as $field => $bool)
         {
@@ -249,6 +245,60 @@ class SolrAPI
         $curl .= " -F stream.url=".LOCAL_WEB_ROOT."$this->csv_path -F stream.contentType='text/plain;charset=utf-8'";
         
         if($GLOBALS['ENV_DEBUG']) echo("Solr send_attributes $curl\n");
+        if(!$GLOBALS['ENV_DEBUG']) $extra_bit = " > /dev/null 2>/dev/null";
+        $extra_bit = @$extra_bit ?: '';
+        exec($curl . $extra_bit);
+        $this->commit();
+    }
+
+	public function send_attributes_for_activity_log($attributes)
+    {
+        @unlink(DOC_ROOT . $this->csv_path);
+        $OUT = fopen(DOC_ROOT . $this->csv_path, "w+");
+        
+        $fields = array_keys(get_object_vars($this->schema_object));
+        if($this->primary_key)
+        {
+            fwrite($OUT, $this->primary_key . $this->file_delimiter . implode($this->file_delimiter, $fields) . "\n");
+        }else
+        {
+            fwrite($OUT, implode($this->file_delimiter, $fields) . "\n");
+        }
+        $multi_values = array();
+        
+        $this_attr = array();
+        if($this->primary_key) $this_attr[] = $primary_key;
+        foreach($fields as $attr)
+        {
+            // this object has this attribute
+            if(isset($attributes[$attr]))
+            {
+                // the attribute is multi-valued
+                if(is_array($attributes[$attr]))
+                {
+                    $multi_values[$attr] = 1;
+                    $values = $attributes[$attr];
+                    $this_attr[] = implode($this->multi_value_delimiter, $values);
+                }else
+                {
+                    $this_attr[] = $attributes[$attr];
+                }
+            }
+            // default value is empty string
+            else $this_attr[] = "";
+        }
+        fwrite($OUT, implode($this->file_delimiter, $this_attr) . "\n");
+        
+        fclose($OUT);
+        
+        $curl = "curl ". $this->action_url ."/update/csv -F overwrite=true -F separator='". $this->file_delimiter ."'";
+        foreach($multi_values as $field => $bool)
+        {
+            $curl .= " -F f.$field.split=true -F f.$field.separator='". $this->multi_value_delimiter ."'";
+        }
+        $curl .= " -F stream.url=".LOCAL_WEB_ROOT."$this->csv_path -F stream.contentType='text/plain;charset=utf-8'";
+        
+		if($GLOBALS['ENV_DEBUG']) echo("Solr send_attributes $curl\n");
         if(!$GLOBALS['ENV_DEBUG']) $extra_bit = " > /dev/null 2>/dev/null";
         $extra_bit = @$extra_bit ?: '';
         exec($curl . $extra_bit);
@@ -290,8 +340,7 @@ class SolrAPI
         
         return $object;
     }
-    
-    
+        
     public static function text_filter(&$text, $convert_to_ascii = false)
     {
         if(is_numeric($text)) return $text;
@@ -312,7 +361,7 @@ class SolrAPI
     
     public static function mysql_date_to_solr_date($mysql_date)
     {
-        // echo "$mysql_date\n";
+        echo "$mysql_date\n";
         if(!$mysql_date) return null;
         return date('Y-m-d', $mysql_date) . "T". date('h:i:s', $mysql_date) ."Z";
     }

@@ -7,7 +7,7 @@ ini_set('display_errors', false);
 
 
 // Data Syncing variables
-if(!isset($GLOBALS['PEER_SITE_ID'])) $GLOBALS['PEER_SITE_ID'] = 1;
+if(!isset($GLOBALS['PEER_SITE_ID'])) $GLOBALS['PEER_SITE_ID'] = 2;
 
 /* Default Environment */
 if(!isset($GLOBALS['ENV_NAME'])) $GLOBALS['ENV_NAME'] = 'development';

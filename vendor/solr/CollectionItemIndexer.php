@@ -32,7 +32,7 @@ class CollectionItemIndexer
         }
     }
     
-    public function index_collection_items(&$collection_item_ids = array(), $optimize = false)
+    public function index_collection_items(&$collection_item_ids = array(), $optimize = false, $log_transaction=true)
     {
         $this->solr = new SolrAPI($this->solr_server, 'collection_items');
         if($collection_item_ids)
@@ -57,7 +57,8 @@ class CollectionItemIndexer
                 foreach($batch as $id) 
                 {                	
                 	$queries[] = "collection_item_id:$id";
-                	$this->solr->log_solr_changes('update', $id, 'collection_id');
+                	if ($log_transaction)
+                		$this->solr->log_solr_changes('update', $id, 'collection_id');
                 }
                 $this->solr->delete_by_queries($queries, false);
                 // add new ones if available
@@ -87,9 +88,12 @@ class CollectionItemIndexer
                 $this->lookup_communities(array('start' => $i, 'limit' => $limit));
                 if($GLOBALS['ENV_DEBUG']) echo "Looked up $i : $limit Time: ". time_elapsed()." .. Mem: ". memory_get_usage() ."\n";
                 $this->solr->delete("collection_item_id:[$i TO ". ($i + $limit - 1) ."]");
-                for ($j=$i; $j <= ($i + $limit - 1); $j+=1) 
-                {
-                		$this->solr->log_solr_changes('update', $j, 'collection_id');
+                if ($log_transaction)
+				{
+	                for ($j=$i; $j <= ($i + $limit - 1); $j+=1) 
+	                {
+	                		$this->solr->log_solr_changes('update', $j, 'collection_id');
+	                }
                 }
                 
                 if(isset($this->objects)) $this->solr->send_attributes($this->objects);

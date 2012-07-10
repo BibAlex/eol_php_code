@@ -32,7 +32,7 @@ class HierarchyEntryIndexer
         if($r = Rank::find_or_create_by_translated_label('sp.')) $this->rank_labels[$r->id] = 'species';
     }
     
-    public function index($hierarchy_id = NULL, $optimize = true)
+    public function index($hierarchy_id = NULL, $optimize = true, $log_transaction = true)
     {
         $filter = "1=1";
         
@@ -43,15 +43,15 @@ class HierarchyEntryIndexer
             $this->solr = new SolrAPI(SOLR_SERVER, 'hierarchy_entries');
             $this->solr->delete("hierarchy_id:$hierarchy_id");
             $filter = "he.hierarchy_id IN ($hierarchy_id)";
-            foreach ($hierarchy_id as he_id) 
+            foreach ($hierarchy_id as $he_id) 
             {
-            	$this->solr->log_solr_changes('update', he_id, 'hierarchy_entries');
+            	if ($log_transaction)
+            		$this->solr->log_solr_changes('update', $he_id, 'hierarchy_entries');
             }
         }else
         {
             $this->solr = new SolrAPI(SOLR_SERVER, 'hierarchy_entries_swap');
-            $this->solr->delete_all_documents();
-            $this->solr->log_solr_changes('delete_all', -1, 'hierarchy_entries');
+            $this->solr->delete_all_documents($log_transaction);
         }
         
         $start = 0;
@@ -77,6 +77,14 @@ class HierarchyEntryIndexer
             $this->lookup_synonyms($i, $limit, $filter);
             
             if(isset($this->objects)) $this->solr->send_attributes($this->objects);
+			
+			 if ($log_transaction)
+				{
+	                for ($j=$i; $j <= ($i + $limit - 1); $j+=1) 
+	                {
+	                		$this->solr->log_solr_changes('hierarchy_entries', $j, 'hierarchy_entry_id');
+	                }
+                }
         }
         
         

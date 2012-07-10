@@ -17,19 +17,19 @@ class SiteSearchIndexer
         $this->solr_server = $solr_server;
     }
     
-    public function index($ids = array(), $optimize = false)
+    public function index($ids = array(), $optimize = false, $log_transaction=true)
     {
         if(!$this->solr) $this->solr = new SolrAPI($this->solr_server, 'site_search');
-        $this->index_type('Collection', 'collections', 'lookup_collections', $ids);
-        $this->index_type('Community', 'communities', 'lookup_communities', $ids);
-        $this->index_type('User', 'users', 'lookup_users', $ids);
-        $this->index_type('DataObject', 'data_objects', 'lookup_objects', $ids);
-        $this->index_type('TaxonConcept', 'taxon_concepts', 'index_taxa', $ids);
+        $this->index_type('Collection', 'collections', 'lookup_collections', $ids, $log_transaction);
+        $this->index_type('Community', 'communities', 'lookup_communities', $ids, $log_transaction);
+        $this->index_type('User', 'users', 'lookup_users', $ids, $log_transaction);
+        $this->index_type('DataObject', 'data_objects', 'lookup_objects', $ids, $log_transaction);
+        $this->index_type('TaxonConcept', 'taxon_concepts', 'index_taxa', $ids, $log_transaction);
         if($optimize) $this->solr->optimize();
     }
     
     // call_user_func($callback, $fields);
-    public function index_type($class_name, $table_name, $callback, &$ids = null)
+    public function index_type($class_name, $table_name, $callback, &$ids = null, $log_transaction=true)
     {
         if(!$this->solr) $this->solr = new SolrAPI($this->solr_server, 'site_search');
         if($ids)
@@ -46,17 +46,20 @@ class SiteSearchIndexer
                 $queries = array();
                 foreach($batch as $id) $queries[] = "resource_type:$class_name AND resource_id:$id";
                 $this->solr->delete_by_queries($queries, false);
-                $this->solr->log_solr_changes('delete_all', -1, $class_name);
+                if ($log_transaction) $this->solr->log_solr_changes('delete_all', -1, $class_name);
                 
                 // add new ones if available
                 if(isset($this->objects))
                 {
                     if($class_name == 'TaxonConcept') $this->send_concept_objects_to_solr();
                     else $this->solr->send_attributes($this->objects);
-                    foreach ($ids as $id)
-                    {
-                    	$this->solr->log_solr_changes('index', $id, $class_name);
-                    }
+                    if ($log_transaction)
+					{
+	                    foreach ($ids as $id)
+	                    {
+	                    	$this->solr->log_solr_changes('index_all', $id, $class_name);
+						}
+					}
                 }
             }
         }else
@@ -85,9 +88,11 @@ class SiteSearchIndexer
                     else $this->solr->send_attributes($this->objects);
                 }
             }
-            
-            $this->solr->log_solr_changes('delete_all', -1, $class_name);
-            $this->solr->log_solr_changes('update_all', 0, $class_name);
+            if ($log_transaction)
+            {
+            	$this->solr->log_solr_changes('delete_all', -1, $class_name);
+            	$this->solr->log_solr_changes('index_all', 0, $class_name);
+			}
         }
         
         $this->solr->commit();
